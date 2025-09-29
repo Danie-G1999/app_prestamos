@@ -1,0 +1,278 @@
+const Cliente = require('../models/Cliente');
+
+class ClienteController {
+  // Obtener todos los clientes con filtros y paginación
+  async index(req, res, next) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      
+      const filters = {
+        nombre: req.query.nombre,
+        email: req.query.email,
+        telefono: req.query.telefono,
+        estado: req.query.estado,
+        ciudad: req.query.ciudad,
+        orderBy: req.query.orderBy,
+        orderDirection: req.query.orderDirection
+      };
+
+      // Filtrar valores undefined
+      Object.keys(filters).forEach(key => {
+        if (filters[key] === undefined || filters[key] === '') {
+          delete filters[key];
+        }
+      });
+
+      let result;
+      if (Object.keys(filters).length > 0) {
+        // Si hay filtros, usar búsqueda con filtros
+        const clientes = await Cliente.findWithFilters(filters);
+        
+        // Paginación manual para la búsqueda filtrada
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedData = clientes.slice(startIndex, endIndex);
+        
+        result = {
+          data: paginatedData,
+          pagination: {
+            page,
+            limit,
+            total: clientes.length,
+            pages: Math.ceil(clientes.length / limit)
+          }
+        };
+      } else {
+        // Sin filtros, usar paginación directa de la base de datos
+        result = await Cliente.findAllPaginated(page, limit);
+      }
+
+      res.json({
+        success: true,
+        message: 'Clientes obtenidos correctamente',
+        ...result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener cliente por ID
+  async show(req, res, next) {
+    try {
+      const { id } = req.params;
+      const cliente = await Cliente.findById(id);
+
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Cliente obtenido correctamente',
+        data: cliente
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener cliente con sus préstamos
+  async showWithPrestamos(req, res, next) {
+    try {
+      const { id } = req.params;
+      const cliente = await Cliente.findWithPrestamos(id);
+
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Cliente obtenido correctamente',
+        data: cliente
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Crear nuevo cliente
+  async store(req, res, next) {
+    try {
+      const clienteData = req.body;
+
+      // Verificar si el email ya existe
+      const existeEmail = await Cliente.emailExists(clienteData.email);
+      if (existeEmail) {
+        return res.status(409).json({
+          success: false,
+          message: 'Ya existe un cliente con este email'
+        });
+      }
+
+      // Verificar si el documento ya existe
+      if (clienteData.documento_identidad) {
+        const existeDocumento = await Cliente.documentoExists(clienteData.documento_identidad);
+        if (existeDocumento) {
+          return res.status(409).json({
+            success: false,
+            message: 'Ya existe un cliente con este documento de identidad'
+          });
+        }
+      }
+
+      const cliente = await Cliente.create(clienteData);
+
+      res.status(201).json({
+        success: true,
+        message: 'Cliente creado correctamente',
+        data: cliente
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Actualizar cliente
+  async update(req, res, next) {
+    try {
+      const { id } = req.params;
+      const clienteData = req.body;
+
+      const clienteExistente = await Cliente.findById(id);
+      if (!clienteExistente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      // Verificar si el email ya existe (excluyendo el cliente actual)
+      if (clienteData.email && clienteData.email !== clienteExistente.email) {
+        const existeEmail = await Cliente.emailExists(clienteData.email, id);
+        if (existeEmail) {
+          return res.status(409).json({
+            success: false,
+            message: 'Ya existe un cliente con este email'
+          });
+        }
+      }
+
+      // Verificar si el documento ya existe (excluyendo el cliente actual)
+      if (clienteData.documento_identidad && clienteData.documento_identidad !== clienteExistente.documento_identidad) {
+        const existeDocumento = await Cliente.documentoExists(clienteData.documento_identidad, id);
+        if (existeDocumento) {
+          return res.status(409).json({
+            success: false,
+            message: 'Ya existe un cliente con este documento de identidad'
+          });
+        }
+      }
+
+      const clienteActualizado = await Cliente.update(id, clienteData);
+
+      res.json({
+        success: true,
+        message: 'Cliente actualizado correctamente',
+        data: clienteActualizado
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Eliminar cliente
+  async destroy(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      const cliente = await Cliente.findById(id);
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      // Verificar si el cliente tiene préstamos activos
+      const estadisticas = await Cliente.getEstadisticas(id);
+      if (estadisticas.prestamos.activos > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se puede eliminar el cliente porque tiene préstamos activos'
+        });
+      }
+
+      await Cliente.delete(id);
+
+      res.json({
+        success: true,
+        message: 'Cliente eliminado correctamente'
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener estadísticas del cliente
+  async getEstadisticas(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      const cliente = await Cliente.findById(id);
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      const estadisticas = await Cliente.getEstadisticas(id);
+
+      res.json({
+        success: true,
+        message: 'Estadísticas obtenidas correctamente',
+        data: estadisticas
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener clientes activos (para selects)
+  async getActivos(req, res, next) {
+    try {
+      const clientes = await Cliente.findActive();
+
+      res.json({
+        success: true,
+        message: 'Clientes activos obtenidos correctamente',
+        data: clientes.map(cliente => ({
+          id: cliente.id,
+          nombre: `${cliente.nombre} ${cliente.apellido}`,
+          email: cliente.email
+        }))
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+}
+
+module.exports = new ClienteController();

@@ -1,0 +1,121 @@
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> } 
+ */
+exports.seed = async function(knex) {
+  // Eliminar datos existentes
+  await knex('prestamos').del();
+  
+  // Insertar préstamos de prueba
+  await knex('prestamos').insert([
+    {
+      id: 1,
+      cliente_id: 1,
+      usuario_id: 1,
+      numero_prestamo: 'PR-2025-001',
+      monto_solicitado: 50000.00,
+      monto_aprobado: 45000.00,
+      tasa_interes: 12.50,
+      plazo_meses: 36,
+      cuota_mensual: 1502.45,
+      tipo_prestamo: 'personal',
+      estado: 'activo',
+      fecha_solicitud: '2025-01-15',
+      fecha_aprobacion: '2025-01-18',
+      fecha_desembolso: '2025-01-20',
+      fecha_vencimiento: '2028-01-20',
+      proposito: 'Renovación de vivienda',
+      comision: 500.00,
+      gastos_administrativos: 150.00,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 2,
+      cliente_id: 2,
+      usuario_id: 1,
+      numero_prestamo: 'PR-2025-002',
+      monto_solicitado: 25000.00,
+      monto_aprobado: 25000.00,
+      tasa_interes: 10.75,
+      plazo_meses: 24,
+      cuota_mensual: 1189.67,
+      tipo_prestamo: 'personal',
+      estado: 'activo',
+      fecha_solicitud: '2025-02-01',
+      fecha_aprobacion: '2025-02-03',
+      fecha_desembolso: '2025-02-05',
+      fecha_vencimiento: '2027-02-05',
+      proposito: 'Educación - Máster',
+      comision: 250.00,
+      gastos_administrativos: 100.00,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 3,
+      cliente_id: 3,
+      usuario_id: 2,
+      numero_prestamo: 'PR-2025-003',
+      monto_solicitado: 80000.00,
+      monto_aprobado: 75000.00,
+      tasa_interes: 11.25,
+      plazo_meses: 48,
+      cuota_mensual: 1942.35,
+      tipo_prestamo: 'comercial',
+      estado: 'activo',
+      fecha_solicitud: '2025-03-10',
+      fecha_aprobacion: '2025-03-15',
+      fecha_desembolso: '2025-03-18',
+      fecha_vencimiento: '2029-03-18',
+      proposito: 'Ampliación de negocio',
+      garantia: 'Local comercial',
+      comision: 750.00,
+      gastos_administrativos: 200.00,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 4,
+      cliente_id: 4,
+      usuario_id: 2,
+      numero_prestamo: 'PR-2025-004',
+      monto_solicitado: 15000.00,
+      monto_aprobado: 15000.00,
+      tasa_interes: 13.50,
+      plazo_meses: 18,
+      cuota_mensual: 946.23,
+      tipo_prestamo: 'personal',
+      estado: 'pagado',
+      fecha_solicitud: '2024-06-15',
+      fecha_aprobacion: '2024-06-18',
+      fecha_desembolso: '2024-06-20',
+      fecha_vencimiento: '2025-12-20',
+      proposito: 'Gastos médicos',
+      comision: 150.00,
+      gastos_administrativos: 75.00,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 5,
+      cliente_id: 5,
+      usuario_id: 1,
+      numero_prestamo: 'PR-2025-005',
+      monto_solicitado: 35000.00,
+      monto_aprobado: 30000.00,
+      tasa_interes: 9.75,
+      plazo_meses: 60,
+      cuota_mensual: 629.81,
+      tipo_prestamo: 'vehicular',
+      estado: 'pendiente',
+      fecha_solicitud: '2025-09-25',
+      proposito: 'Compra de vehículo',
+      garantia: 'Vehículo a adquirir',
+      comision: 300.00,
+      gastos_administrativos: 125.00,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    }
+  ]);
+};
