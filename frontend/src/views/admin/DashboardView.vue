@@ -1,6 +1,26 @@
 <template>
   <div>
-    <!-- Stats Cards -->
+    <!-- Loading state -->
+    <div v-if="$store.state.loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+    </div>
+
+    <!-- Error state -->
+    <div v-else-if="$store.state.error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Error</h3>
+          <p class="text-sm text-red-700 mt-1">{{ $store.state.error }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div v-else>
+      <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="card">
         <div class="flex items-center">
@@ -166,6 +186,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -204,11 +225,16 @@ export default {
   computed: {
     ...mapState(['prestamos']),
     ...mapGetters(['totalPrestamos', 'prestamosActivos']),
+    prestamosArray() {
+      // Asegurar que prestamos siempre sea un array
+      return Array.isArray(this.prestamos) ? this.prestamos : []
+    },
     stats() {
-      const totalPrestamos = this.prestamos.length
-      const prestamosActivos = this.prestamos.filter(p => p.estado === 'activo').length
-      const montoTotal = this.prestamos.reduce((total, prestamo) => total + parseFloat(prestamo.monto || 0), 0)
-      const clientesUnicos = new Set(this.prestamos.map(p => p.cliente)).size
+      const prestamosData = this.prestamosArray
+      const totalPrestamos = prestamosData.length
+      const prestamosActivos = prestamosData.filter(p => p.estado === 'activo').length
+      const montoTotal = prestamosData.reduce((total, prestamo) => total + parseFloat(prestamo.monto || 0), 0)
+      const clientesUnicos = new Set(prestamosData.map(p => p.cliente_id || p.cliente)).size
       
       return {
         totalPrestamos,
@@ -234,8 +260,16 @@ export default {
     }
   },
   async mounted() {
-    // Cargar datos iniciales
-    await this.fetchPrestamos()
+    try {
+      // Cargar datos iniciales solo si estamos autenticados
+      if (this.$store.state.isAuthenticated && this.$store.state.token) {
+        await this.fetchPrestamos()
+      }
+    } catch (error) {
+      console.error('Error al cargar datos del dashboard:', error)
+      // En caso de error, asegurar que prestamos sea un array vacío
+      this.$store.commit('SET_PRESTAMOS', [])
+    }
   }
 }
 </script>

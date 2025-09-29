@@ -10,26 +10,39 @@ export default createStore({
     error: null
   },
   getters: {
-    totalPrestamos: state => state.prestamos.length,
-    prestamosActivos: state => state.prestamos.filter(prestamo => prestamo.estado === 'activo'),
+    totalPrestamos: state => Array.isArray(state.prestamos) ? state.prestamos.length : 0,
+    prestamosActivos: state => Array.isArray(state.prestamos) ? state.prestamos.filter(prestamo => prestamo.estado === 'activo') : [],
     isAuthenticated: state => state.isAuthenticated,
     currentUser: state => state.usuario
   },
   mutations: {
     SET_PRESTAMOS(state, prestamos) {
-      state.prestamos = prestamos
+      // Asegurar que siempre sea un array
+      state.prestamos = Array.isArray(prestamos) ? prestamos : []
     },
     ADD_PRESTAMO(state, prestamo) {
+      // Asegurar que prestamos sea un array antes de hacer push
+      if (!Array.isArray(state.prestamos)) {
+        state.prestamos = []
+      }
       state.prestamos.push(prestamo)
     },
     UPDATE_PRESTAMO(state, prestamoActualizado) {
+      // Asegurar que prestamos sea un array
+      if (!Array.isArray(state.prestamos)) {
+        state.prestamos = []
+        return
+      }
       const index = state.prestamos.findIndex(p => p.id === prestamoActualizado.id)
       if (index !== -1) {
         state.prestamos.splice(index, 1, prestamoActualizado)
       }
     },
     DELETE_PRESTAMO(state, prestamoId) {
-      state.prestamos = state.prestamos.filter(p => p.id !== prestamoId)
+      // Asegurar que prestamos sea un array
+      if (Array.isArray(state.prestamos)) {
+        state.prestamos = state.prestamos.filter(p => p.id !== prestamoId)
+      }
     },
     SET_AUTH(state, { usuario, token }) {
       state.usuario = usuario
@@ -115,9 +128,19 @@ export default createStore({
             'Authorization': `Bearer ${state.token}`
           }
         })
-        const prestamos = await response.json()
-        commit('SET_PRESTAMOS', prestamos)
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Asegurar que siempre sea un array
+          const prestamos = Array.isArray(data) ? data : (data.prestamos && Array.isArray(data.prestamos) ? data.prestamos : [])
+          commit('SET_PRESTAMOS', prestamos)
+        } else {
+          // Si hay error, establecer array vacío
+          commit('SET_PRESTAMOS', [])
+          commit('SET_ERROR', 'Error al cargar préstamos')
+        }
       } catch (error) {
+        commit('SET_PRESTAMOS', []) // Asegurar array vacío en caso de error
         commit('SET_ERROR', 'Error al cargar préstamos')
         console.error('Error fetching prestamos:', error)
       } finally {

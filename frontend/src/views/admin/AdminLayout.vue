@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Sidebar -->
-    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out" 
+    <div class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0" 
          :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
       
       <!-- Logo -->
@@ -139,7 +139,7 @@ export default {
   name: 'AdminLayout',
   data() {
     return {
-      sidebarOpen: false,
+      sidebarOpen: window.innerWidth >= 1024, // true para pantallas lg y superiores
       userMenuOpen: false
     }
   },
@@ -161,6 +161,12 @@ export default {
     async handleLogout() {
       await this.logout()
       this.$router.push('/login')
+    },
+    handleResize() {
+      // En pantallas grandes, mantener el sidebar abierto
+      if (window.innerWidth >= 1024) {
+        this.sidebarOpen = true
+      }
     }
   },
   mounted() {
@@ -169,6 +175,13 @@ export default {
     if (!token) {
       this.$router.push('/login')
     }
+    
+    // Agregar listener para redimensionado
+    window.addEventListener('resize', this.handleResize)
+  },
+  beforeUnmount() {
+    // Limpiar listener
+    window.removeEventListener('resize', this.handleResize)
   }
 }
 </script>
