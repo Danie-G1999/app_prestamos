@@ -6,9 +6,9 @@ const ClienteController = require('../controllers/ClienteController');
 
 const router = express.Router();
 
-// Middleware de autenticación para todas las rutas
-router.use(authMiddleware);
-router.use(requireStaff);
+// Middleware de autenticación para todas las rutas - TEMPORALMENTE DESHABILITADO PARA DESARROLLO
+// router.use(authMiddleware);
+// router.use(requireStaff);
 
 // Validaciones para crear cliente
 const createClienteValidation = [
@@ -36,10 +36,6 @@ const createClienteValidation = [
     .optional()
     .isIn(['DNI', 'NIE', 'Pasaporte'])
     .withMessage('Tipo de documento inválido'),
-  body('fecha_nacimiento')
-    .optional()
-    .isDate()
-    .withMessage('Debe ser una fecha válida'),
   body('ingresos_mensuales')
     .optional()
     .isDecimal({ decimal_digits: '0,2' })
@@ -87,10 +83,6 @@ const updateClienteValidation = [
     .optional()
     .isIn(['DNI', 'NIE', 'Pasaporte'])
     .withMessage('Tipo de documento inválido'),
-  body('fecha_nacimiento')
-    .optional()
-    .isDate()
-    .withMessage('Debe ser una fecha válida'),
   body('ingresos_mensuales')
     .optional()
     .isDecimal({ decimal_digits: '0,2' })

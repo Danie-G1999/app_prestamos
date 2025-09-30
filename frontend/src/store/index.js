@@ -277,12 +277,13 @@ export default createStore({
         commit('SET_LOADING', true)
         commit('SET_ERROR', null)
         
-        const response = await fetch('/api/clientes', {
-          headers: {
-            'Authorization': `Bearer ${state.token}`,
-            'Content-Type': 'application/json'
-          }
-        })
+        // Preparar headers
+        const headers = { 'Content-Type': 'application/json' }
+        if (state.token) {
+          headers['Authorization'] = `Bearer ${state.token}`
+        }
+        
+        const response = await fetch('/api/clientes', { headers })
         
         if (response.ok) {
           const result = await response.json()
@@ -315,12 +316,13 @@ export default createStore({
         commit('SET_LOADING', true)
         commit('SET_ERROR', null)
         
-        const response = await fetch(`/api/clientes/${clienteId}/prestamos`, {
-          headers: {
-            'Authorization': `Bearer ${state.token}`,
-            'Content-Type': 'application/json'
-          }
-        })
+        // Preparar headers
+        const headers = { 'Content-Type': 'application/json' }
+        if (state.token) {
+          headers['Authorization'] = `Bearer ${state.token}`
+        }
+        
+        const response = await fetch(`/api/clientes/${clienteId}/prestamos`, { headers })
         
         if (response.ok) {
           const result = await response.json()
