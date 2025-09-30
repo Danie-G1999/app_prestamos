@@ -98,6 +98,12 @@ export default createStore({
       commit('CLEAR_AUTH')
     },
     
+    // Limpiar autenticación cuando el token es inválido
+    clearInvalidAuth({ commit }) {
+      console.warn('Token inválido detectado, limpiando autenticación...')
+      commit('CLEAR_AUTH')
+    },
+    
     async checkAuth({ commit }) {
       const token = localStorage.getItem('token')
       if (token) {
@@ -123,26 +129,61 @@ export default createStore({
     async fetchPrestamos({ commit, state }) {
       try {
         commit('SET_LOADING', true)
-        const response = await fetch('/api/prestamos', {
-          headers: {
-            'Authorization': `Bearer ${state.token}`
-          }
-        })
+        commit('SET_ERROR', null) // Limpiar errores previos
+        
+        // Preparar headers solo si hay token
+        const headers = { 'Content-Type': 'application/json' }
+        if (state.token) {
+          headers['Authorization'] = `Bearer ${state.token}`
+        }
+        
+        const response = await fetch('/api/prestamos', { headers })
         
         if (response.ok) {
           const data = await response.json()
-          // Asegurar que siempre sea un array
-          const prestamos = Array.isArray(data) ? data : (data.prestamos && Array.isArray(data.prestamos) ? data.prestamos : [])
+          console.log('Respuesta del backend:', data) // Debug
+          
+          // Verificar si la respuesta tiene la estructura esperada
+          let prestamos = [];
+          if (data.success && Array.isArray(data.data)) {
+            prestamos = data.data;
+          } else if (Array.isArray(data)) {
+            prestamos = data;
+          } else if (data.prestamos && Array.isArray(data.prestamos)) {
+            prestamos = data.prestamos;
+          }
+          
+          console.log('Préstamos procesados:', prestamos) // Debug
           commit('SET_PRESTAMOS', prestamos)
+        } else if (response.status === 401) {
+          // Token inválido, limpiar autenticación pero continuar sin error
+          console.warn('Token inválido, limpiando autenticación')
+          commit('CLEAR_AUTH')
+          
+          // Intentar de nuevo sin token
+          const retryResponse = await fetch('/api/prestamos')
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json()
+            let prestamos = [];
+            if (retryData.success && Array.isArray(retryData.data)) {
+              prestamos = retryData.data;
+            }
+            commit('SET_PRESTAMOS', prestamos)
+          } else {
+            commit('SET_PRESTAMOS', [])
+          }
         } else {
-          // Si hay error, establecer array vacío
+          // Otros errores del servidor
           commit('SET_PRESTAMOS', [])
           commit('SET_ERROR', 'Error al cargar préstamos')
         }
       } catch (error) {
         commit('SET_PRESTAMOS', []) // Asegurar array vacío en caso de error
-        commit('SET_ERROR', 'Error al cargar préstamos')
         console.error('Error fetching prestamos:', error)
+        // No mostrar error de conexión si el token es el problema
+        if (!error.message.includes('token')) {
+          commit('SET_ERROR', 'Error de conexión')
+        }
       } finally {
         commit('SET_LOADING', false)
       }

@@ -23,7 +23,7 @@
 
       <!-- Servicios principales -->
       <div class="grid lg:grid-cols-3 gap-8 mb-16">
-        <div class="card text-center">
+        <!-- <div class="card text-center">
           <div class="text-5xl mb-6">🏠</div>
           <h2 class="text-2xl font-bold mb-4">Préstamos Hipotecarios</h2>
           <p class="text-gray-600 mb-6">
@@ -48,7 +48,7 @@
             </div>
           </div>
           <button class="btn-primary w-full">Solicitar</button>
-        </div>
+        </div> -->
 
         <div class="card text-center">
           <div class="text-5xl mb-6">💼</div>
@@ -77,7 +77,7 @@
           <button class="btn-primary w-full">Solicitar</button>
         </div>
 
-        <div class="card text-center">
+        <!-- <div class="card text-center">
           <div class="text-5xl mb-6">🚗</div>
           <h2 class="text-2xl font-bold mb-4">Préstamos Vehiculares</h2>
           <p class="text-gray-600 mb-6">
@@ -102,7 +102,7 @@
             </div>
           </div>
           <button class="btn-primary w-full">Solicitar</button>
-        </div>
+        </div> -->
       </div>
 
       <!-- Proceso de solicitud -->

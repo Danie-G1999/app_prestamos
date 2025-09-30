@@ -31,6 +31,10 @@ class Prestamo extends BaseModel {
         'clientes.apellido',
         'clientes.email',
         'clientes.telefono',
+        'clientes.direccion',
+        'clientes.ciudad',
+        'clientes.ingresos_mensuales',
+        'clientes.ocupacion',
         'usuarios.nombre as usuario_nombre'
       )
       .join('clientes', 'prestamos.cliente_id', 'clientes.id')

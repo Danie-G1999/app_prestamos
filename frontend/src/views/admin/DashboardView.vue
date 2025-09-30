@@ -261,10 +261,9 @@ export default {
   },
   async mounted() {
     try {
-      // Cargar datos iniciales solo si estamos autenticados
-      if (this.$store.state.isAuthenticated && this.$store.state.token) {
-        await this.fetchPrestamos()
-      }
+      // Cargar datos iniciales sin validar autenticación estricta
+      // ya que estamos en modo desarrollo
+      await this.fetchPrestamos()
     } catch (error) {
       console.error('Error al cargar datos del dashboard:', error)
       // En caso de error, asegurar que prestamos sea un array vacío

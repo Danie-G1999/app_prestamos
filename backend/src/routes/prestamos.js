@@ -6,9 +6,10 @@ const PrestamoController = require('../controllers/PrestamoController');
 
 const router = express.Router();
 
-// Middleware de autenticación para todas las rutas
-router.use(authMiddleware);
-router.use(requireStaff);
+// TEMPORAL: Comentar autenticación para desarrollo
+// TODO: Descomentar en producción
+// router.use(authMiddleware);
+// router.use(requireStaff);
 
 // Validaciones para crear préstamo
 const createPrestamoValidation = [

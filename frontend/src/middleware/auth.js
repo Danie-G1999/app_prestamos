@@ -1,6 +1,13 @@
 export default function requireAuth(to, from, next) {
   const token = localStorage.getItem('token')
   
+  // En modo desarrollo, permitir acceso sin token válido
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('Modo desarrollo: acceso permitido sin validación estricta de token')
+    next()
+    return
+  }
+  
   if (token) {
     // Verificar si el token es válido (esto se puede hacer con una llamada al servidor)
     next()

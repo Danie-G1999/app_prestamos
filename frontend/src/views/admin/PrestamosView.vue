@@ -1,11 +1,17 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Gestión de Préstamos</h1>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Gestión de Préstamos</h1>
+        <p class="text-gray-600 mt-1">{{ prestamos.length }} préstamo{{ prestamos.length !== 1 ? 's' : '' }} registrado{{ prestamos.length !== 1 ? 's' : '' }}</p>
+      </div>
       <button 
         @click="showCreateForm = true"
-        class="btn-primary"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
       >
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
         Nuevo Préstamo
       </button>
     </div>
@@ -85,64 +91,123 @@
     </div>
 
     <!-- Lista de préstamos -->
-    <div class="grid gap-6">
-      <div v-if="prestamos.length === 0" class="card text-center">
-        <p class="text-gray-500">No hay préstamos registrados aún.</p>
+    <div class="space-y-6">
+      <div v-if="prestamos.length === 0" class="text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay préstamos</h3>
+        <p class="mt-1 text-sm text-gray-500">Comienza creando tu primer préstamo.</p>
+        <div class="mt-6">
+          <button @click="showCreateForm = true" class="btn-primary">
+            Crear Primer Préstamo
+          </button>
+        </div>
       </div>
       
       <div 
         v-for="prestamo in prestamos" 
         :key="prestamo.id"
-        class="card"
+        class="bg-white overflow-hidden shadow rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
       >
-        <div class="flex justify-between items-start">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900">{{ prestamo.cliente }}</h3>
-            <p class="text-gray-600">{{ prestamo.descripcion }}</p>
-            <div class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
-                <span class="font-medium">Monto:</span>
-                <span class="block text-lg font-bold text-primary-600">
-                  ${{ formatMoney(prestamo.monto) }}
-                </span>
+        <div class="px-6 py-5">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <h3 class="text-lg font-semibold text-gray-900">
+                    {{ prestamo.nombre + ' ' + prestamo.apellido || prestamo.cliente || 'Cliente no especificado' }}
+                  </h3>
+                  <p class="text-sm text-gray-500">{{ prestamo.numero_prestamo || `PRE-${prestamo.id}` }}</p>
+                </div>
               </div>
-              <div>
-                <span class="font-medium">Tasa:</span>
-                <span class="block">{{ prestamo.tasaInteres }}%</span>
-              </div>
-              <div>
-                <span class="font-medium">Plazo:</span>
-                <span class="block">{{ prestamo.plazo }} meses</span>
-              </div>
-              <div>
-                <span class="font-medium">Estado:</span>
-                <span 
-                  class="block px-2 py-1 rounded text-xs font-medium"
-                  :class="getEstadoClass(prestamo.estado)"
-                >
-                  {{ prestamo.estado }}
-                </span>
+              
+              <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-50 p-3 rounded-lg">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Monto Aprobado</div>
+                  <div class="mt-1 text-xl font-bold text-gray-900">
+                    ${{ formatMoney(prestamo.monto_aprobado || prestamo.monto_solicitado || prestamo.monto) }}
+                  </div>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-lg">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Tasa de Interés</div>
+                  <div class="mt-1 text-xl font-bold text-blue-600">{{ prestamo.tasa_interes }}%</div>
+                </div>
+                <div class="bg-purple-50 p-3 rounded-lg">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Plazo</div>
+                  <div class="mt-1 text-xl font-bold text-purple-600">{{ prestamo.plazo_meses || prestamo.plazo }} meses</div>
+                </div>
+                <div class="bg-green-50 p-3 rounded-lg">
+                  <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</div>
+                  <div class="mt-1">
+                    <span 
+                      class="inline-flex px-3 py-1 rounded-full text-xs font-medium"
+                      :class="getEstadoClass(prestamo.estado)"
+                    >
+                      {{ getEstadoText(prestamo.estado) }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="flex gap-2">
-            <button class="text-blue-600 hover:text-blue-800">Editar</button>
-            <button class="text-red-600 hover:text-red-800">Eliminar</button>
+            
+            <div class="flex flex-col gap-2 ml-6">
+              <button 
+                @click="viewPrestamo(prestamo)"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                Ver Detalles
+              </button>
+              <button 
+                @click="editPrestamo(prestamo)"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Editar
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Modal de Detalles del Préstamo -->
+    <PrestamoModal 
+      :is-open="showModal" 
+      :prestamo="selectedPrestamo || {}" 
+      @close="closeModal"
+      @edit="editPrestamo"
+    />
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex'
+import PrestamoModal from '@/components/PrestamoModal.vue'
 
 export default {
   name: 'PrestamosView',
+  components: {
+    PrestamoModal
+  },
   data() {
     return {
       showCreateForm: false,
+      showModal: false,
+      selectedPrestamo: null,
       newPrestamo: {
         cliente: '',
         monto: '',
@@ -180,26 +245,63 @@ export default {
       }
     },
     formatMoney(amount) {
+      if (!amount || isNaN(amount)) return '0.00'
       return new Intl.NumberFormat('es-ES', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-      }).format(amount)
+      }).format(Number(amount))
     },
     getEstadoClass(estado) {
-      switch (estado) {
+      switch (estado?.toLowerCase()) {
         case 'activo':
           return 'bg-green-100 text-green-800'
-        case 'pagado':
+        case 'completado':
           return 'bg-blue-100 text-blue-800'
+        case 'pendiente_aprobacion':
+          return 'bg-yellow-100 text-yellow-800'
+        case 'rechazado':
+          return 'bg-red-100 text-red-800'
         case 'vencido':
           return 'bg-red-100 text-red-800'
         default:
           return 'bg-gray-100 text-gray-800'
       }
+    },
+    getEstadoText(estado) {
+      switch (estado?.toLowerCase()) {
+        case 'activo':
+          return 'Activo'
+        case 'completado':
+          return 'Completado'
+        case 'pendiente_aprobacion':
+          return 'Pendiente'
+        case 'rechazado':
+          return 'Rechazado'
+        case 'vencido':
+          return 'Vencido'
+        default:
+          return estado || 'Desconocido'
+      }
+    },
+    viewPrestamo(prestamo) {
+      console.log('Datos del préstamo seleccionado:', prestamo)
+      this.selectedPrestamo = prestamo
+      this.showModal = true
+    },
+    editPrestamo(prestamo) {
+      console.log('Editar préstamo:', prestamo)
+      // Aquí puedes implementar la lógica de edición
+      this.closeModal()
+    },
+    closeModal() {
+      this.showModal = false
+      this.selectedPrestamo = null
     }
   },
-  mounted() {
-    this.fetchPrestamos()
+  async mounted() {
+    console.log('Cargando préstamos...')
+    await this.fetchPrestamos()
+    console.log('Préstamos cargados en el componente:', this.prestamos)
   }
 }
 </script>
