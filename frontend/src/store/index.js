@@ -3,6 +3,7 @@ import { createStore } from 'vuex'
 export default createStore({
   state: {
     prestamos: [],
+    clientes: [],
     usuario: null,
     isAuthenticated: false,
     token: localStorage.getItem('token') || null,
@@ -12,6 +13,8 @@ export default createStore({
   getters: {
     totalPrestamos: state => Array.isArray(state.prestamos) ? state.prestamos.length : 0,
     prestamosActivos: state => Array.isArray(state.prestamos) ? state.prestamos.filter(prestamo => prestamo.estado === 'activo') : [],
+    totalClientes: state => Array.isArray(state.clientes) ? state.clientes.length : 0,
+    clientesActivos: state => Array.isArray(state.clientes) ? state.clientes.filter(cliente => cliente.estado === 'activo') : [],
     isAuthenticated: state => state.isAuthenticated,
     currentUser: state => state.usuario
   },
@@ -42,6 +45,31 @@ export default createStore({
       // Asegurar que prestamos sea un array
       if (Array.isArray(state.prestamos)) {
         state.prestamos = state.prestamos.filter(p => p.id !== prestamoId)
+      }
+    },
+    // Mutaciones para clientes
+    SET_CLIENTES(state, clientes) {
+      state.clientes = Array.isArray(clientes) ? clientes : []
+    },
+    ADD_CLIENTE(state, cliente) {
+      if (!Array.isArray(state.clientes)) {
+        state.clientes = []
+      }
+      state.clientes.push(cliente)
+    },
+    UPDATE_CLIENTE(state, clienteActualizado) {
+      if (!Array.isArray(state.clientes)) {
+        state.clientes = []
+        return
+      }
+      const index = state.clientes.findIndex(c => c.id === clienteActualizado.id)
+      if (index !== -1) {
+        state.clientes.splice(index, 1, clienteActualizado)
+      }
+    },
+    DELETE_CLIENTE(state, clienteId) {
+      if (Array.isArray(state.clientes)) {
+        state.clientes = state.clientes.filter(c => c.id !== clienteId)
       }
     },
     SET_AUTH(state, { usuario, token }) {
@@ -240,6 +268,151 @@ export default createStore({
       } catch (error) {
         commit('SET_ERROR', 'Error al eliminar préstamo')
         return { success: false, message: 'Error al eliminar préstamo' }
+      }
+    },
+
+    // Acciones para clientes
+    async fetchClientes({ commit, state }) {
+      try {
+        commit('SET_LOADING', true)
+        commit('SET_ERROR', null)
+        
+        const response = await fetch('/api/clientes', {
+          headers: {
+            'Authorization': `Bearer ${state.token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && Array.isArray(result.data)) {
+            commit('SET_CLIENTES', result.data)
+          } else {
+            commit('SET_CLIENTES', [])
+          }
+        } else if (response.status === 401) {
+          // Token inválido o expirado
+          commit('CLEAR_AUTH')
+          commit('SET_CLIENTES', [])
+        } else {
+          commit('SET_CLIENTES', [])
+          commit('SET_ERROR', 'Error al cargar clientes')
+        }
+      } catch (error) {
+        commit('SET_CLIENTES', [])
+        console.error('Error fetching clientes:', error)
+        if (!error.message.includes('token')) {
+          commit('SET_ERROR', 'Error de conexión')
+        }
+      } finally {
+        commit('SET_LOADING', false)
+      }
+    },
+
+    async fetchClienteWithPrestamos({ commit, state }, clienteId) {
+      try {
+        commit('SET_LOADING', true)
+        commit('SET_ERROR', null)
+        
+        const response = await fetch(`/api/clientes/${clienteId}/prestamos`, {
+          headers: {
+            'Authorization': `Bearer ${state.token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            return { success: true, data: result.data }
+          }
+        }
+        return { success: false, message: 'Error al cargar cliente con préstamos' }
+      } catch (error) {
+        console.error('Error fetching cliente with prestamos:', error)
+        return { success: false, message: 'Error de conexión' }
+      } finally {
+        commit('SET_LOADING', false)
+      }
+    },
+    
+    async createCliente({ commit, state }, cliente) {
+      try {
+        commit('SET_LOADING', true)
+        const response = await fetch('/api/clientes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`
+          },
+          body: JSON.stringify(cliente)
+        })
+        
+        const result = await response.json()
+        
+        if (response.ok && result.success) {
+          commit('ADD_CLIENTE', result.data)
+          return { success: true, cliente: result.data }
+        } else {
+          return { success: false, message: result.message || 'Error al crear cliente' }
+        }
+      } catch (error) {
+        console.error('Error creating cliente:', error)
+        return { success: false, message: 'Error de conexión' }
+      } finally {
+        commit('SET_LOADING', false)
+      }
+    },
+    
+    async updateCliente({ commit, state }, cliente) {
+      try {
+        commit('SET_LOADING', true)
+        const response = await fetch(`/api/clientes/${cliente.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`
+          },
+          body: JSON.stringify(cliente)
+        })
+        
+        const result = await response.json()
+        
+        if (response.ok && result.success) {
+          commit('UPDATE_CLIENTE', result.data)
+          return { success: true, cliente: result.data }
+        } else {
+          return { success: false, message: result.message || 'Error al actualizar cliente' }
+        }
+      } catch (error) {
+        console.error('Error updating cliente:', error)
+        return { success: false, message: 'Error de conexión' }
+      } finally {
+        commit('SET_LOADING', false)
+      }
+    },
+    
+    async deleteCliente({ commit, state }, clienteId) {
+      try {
+        const response = await fetch(`/api/clientes/${clienteId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${state.token}`
+          }
+        })
+        
+        const result = await response.json()
+        
+        if (response.ok && result.success) {
+          commit('DELETE_CLIENTE', clienteId)
+          return { success: true }
+        } else {
+          return { success: false, message: result.message || 'Error al eliminar cliente' }
+        }
+      } catch (error) {
+        console.error('Error deleting cliente:', error)
+        return { success: false, message: 'Error de conexión' }
       }
     }
   },

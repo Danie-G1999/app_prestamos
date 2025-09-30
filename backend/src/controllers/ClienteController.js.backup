@@ -59,6 +59,11 @@ class ClienteController {
     }
   }
 
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Obtener cliente por ID
   async show(req, res, next) {
     try {
@@ -113,24 +118,24 @@ class ClienteController {
     try {
       const clienteData = req.body;
 
-      // Validar datos requeridos
-      const requiredFields = ['nombre', 'apellido', 'email'];
-      const missingFields = requiredFields.filter(field => !clienteData[field]);
-      
-      if (missingFields.length > 0) {
-        return res.status(400).json({
-          success: false,
-          message: `Campos requeridos faltantes: ${missingFields.join(', ')}`
-        });
-      }
-
       // Verificar si el email ya existe
-      const existingCliente = await Cliente.findByEmail(clienteData.email);
-      if (existingCliente) {
+      const existeEmail = await Cliente.emailExists(clienteData.email);
+      if (existeEmail) {
         return res.status(409).json({
           success: false,
           message: 'Ya existe un cliente con este email'
         });
+      }
+
+      // Verificar si el documento ya existe
+      if (clienteData.documento_identidad) {
+        const existeDocumento = await Cliente.documentoExists(clienteData.documento_identidad);
+        if (existeDocumento) {
+          return res.status(409).json({
+            success: false,
+            message: 'Ya existe un cliente con este documento de identidad'
+          });
+        }
       }
 
       const cliente = await Cliente.create(clienteData);
@@ -152,32 +157,42 @@ class ClienteController {
       const { id } = req.params;
       const clienteData = req.body;
 
-      // Verificar si el cliente existe
-      const existingCliente = await Cliente.findById(id);
-      if (!existingCliente) {
+      const clienteExistente = await Cliente.findById(id);
+      if (!clienteExistente) {
         return res.status(404).json({
           success: false,
           message: 'Cliente no encontrado'
         });
       }
 
-      // Si se está actualizando el email, verificar que no exista otro cliente con ese email
-      if (clienteData.email && clienteData.email !== existingCliente.email) {
-        const emailExists = await Cliente.findByEmail(clienteData.email);
-        if (emailExists && emailExists.id !== parseInt(id)) {
+      // Verificar si el email ya existe (excluyendo el cliente actual)
+      if (clienteData.email && clienteData.email !== clienteExistente.email) {
+        const existeEmail = await Cliente.emailExists(clienteData.email, id);
+        if (existeEmail) {
           return res.status(409).json({
             success: false,
-            message: 'Ya existe otro cliente con este email'
+            message: 'Ya existe un cliente con este email'
           });
         }
       }
 
-      const updatedCliente = await Cliente.update(id, clienteData);
+      // Verificar si el documento ya existe (excluyendo el cliente actual)
+      if (clienteData.documento_identidad && clienteData.documento_identidad !== clienteExistente.documento_identidad) {
+        const existeDocumento = await Cliente.documentoExists(clienteData.documento_identidad, id);
+        if (existeDocumento) {
+          return res.status(409).json({
+            success: false,
+            message: 'Ya existe un cliente con este documento de identidad'
+          });
+        }
+      }
+
+      const clienteActualizado = await Cliente.update(id, clienteData);
 
       res.json({
         success: true,
         message: 'Cliente actualizado correctamente',
-        data: updatedCliente
+        data: clienteActualizado
       });
 
     } catch (error) {
@@ -190,7 +205,6 @@ class ClienteController {
     try {
       const { id } = req.params;
 
-      // Verificar si el cliente existe
       const cliente = await Cliente.findById(id);
       if (!cliente) {
         return res.status(404).json({
@@ -200,11 +214,11 @@ class ClienteController {
       }
 
       // Verificar si el cliente tiene préstamos activos
-      const prestamosActivos = await Cliente.hasActivePrestamos(id);
-      if (prestamosActivos) {
+      const estadisticas = await Cliente.getEstadisticas(id);
+      if (estadisticas.prestamos.activos > 0) {
         return res.status(400).json({
           success: false,
-          message: 'No se puede eliminar un cliente con préstamos activos'
+          message: 'No se puede eliminar el cliente porque tiene préstamos activos'
         });
       }
 
@@ -220,15 +234,25 @@ class ClienteController {
     }
   }
 
-  // Obtener estadísticas de clientes
+  // Obtener estadísticas del cliente
   async getEstadisticas(req, res, next) {
     try {
-      const stats = await Cliente.getEstadisticas();
+      const { id } = req.params;
+
+      const cliente = await Cliente.findById(id);
+      if (!cliente) {
+        return res.status(404).json({
+          success: false,
+          message: 'Cliente no encontrado'
+        });
+      }
+
+      const estadisticas = await Cliente.getEstadisticas(id);
 
       res.json({
         success: true,
         message: 'Estadísticas obtenidas correctamente',
-        data: stats
+        data: estadisticas
       });
 
     } catch (error) {
@@ -236,15 +260,19 @@ class ClienteController {
     }
   }
 
-  // Obtener clientes activos
+  // Obtener clientes activos (para selects)
   async getActivos(req, res, next) {
     try {
-      const clientes = await Cliente.findByEstado('activo');
+      const clientes = await Cliente.findActive();
 
       res.json({
         success: true,
         message: 'Clientes activos obtenidos correctamente',
-        data: clientes
+        data: clientes.map(cliente => ({
+          id: cliente.id,
+          nombre: `${cliente.nombre} ${cliente.apellido}`,
+          email: cliente.email
+        }))
       });
 
     } catch (error) {
